@@ -2,7 +2,7 @@ package Net::Whois::IP;
 
 
 ########################################
-#$Id: IP.pm,v 1.5 2003/03/05 17:03:27 ben Exp $
+#$Id: IP.pm,v 1.7 2003/05/29 14:34:37 ben Exp $
 ########################################
 
 use strict;
@@ -15,7 +15,7 @@ use Carp;
 @EXPORT = qw(
 	     whoisip_query
 	    );
-$VERSION = '0.14';
+$VERSION = '0.24';
 
 my %whois_servers = ("RIPE"=>"whois.ripe.net","APNIC"=>"whois.apnic.net","KRNIC"=>"whois.krnic.net","LACNIC"=>"whois.lacnic.net","ARIN"=>"whois.arin.net");
 
@@ -25,7 +25,7 @@ my %whois_servers = ("RIPE"=>"whois.ripe.net","APNIC"=>"whois.apnic.net","KRNIC"
 
 sub whoisip_query {
     my($ip) = @_;
-    if($ip !~ /\d{1,3}\.\d{1,3}\.\d{1,3}.\d{1,3}/) {
+    if($ip !~ /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/) {
 	croak("$ip is not a valid ip address");
     }
 #DO_DEBUG("looking up $ip");
@@ -102,7 +102,7 @@ sub _do_processing {
 	}elsif((/OrgID:\s+(\S+)/) || (/source:\s+(\S+)/) && (!defined($hash_response->{'TechPhone'})) ) {
 	    my $val = $1;	
 #DO_DEBUG("Orgname match: value was $val if not RIPE,APNIC,KRNIC,or LACNIC.. will skip");
-	    if($val =~ /^RIPE|APNIC|KRNIC|LACNIC$/) {
+	    if($val =~ /^(?:RIPE|APNIC|KRNIC|LACNIC)$/) {
 		$registrar = $val;
 #DO_DEBUG(" RIPE - APNIC match --> $registrar --> trying again ");
 		last LOOP;
