@@ -4,3 +4,5 @@ Revision history for Perl extension Net::Whois::IP.
 	- original version; First release version
 0.03 Wed Mar 5 9:25:00 2003
 	- updated based on bug report for ip 199.4.199.0
+0.14 Thu Mar 6 10:17:00 2003
+	- added array of hashes for all responses for all queries run
