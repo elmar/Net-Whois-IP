@@ -2,7 +2,7 @@ package Net::Whois::IP;
 
 
 ########################################
-#$Id: IP.pm,v 1.3 2003/02/14 16:19:25 ben Exp $
+#$Id: IP.pm,v 1.5 2003/03/05 17:03:27 ben Exp $
 ########################################
 
 use strict;
@@ -15,7 +15,7 @@ use Carp;
 @EXPORT = qw(
 	     whoisip_query
 	    );
-$VERSION = '0.03';
+$VERSION = '0.13';
 
 my %whois_servers = ("RIPE"=>"whois.ripe.net","APNIC"=>"whois.apnic.net","KRNIC"=>"whois.krnic.net","LACNIC"=>"whois.lacnic.net","ARIN"=>"whois.arin.net");
 
@@ -28,7 +28,7 @@ sub whoisip_query {
     if($ip !~ /\d{1,3}\.\d{1,3}\.\d{1,3}.\d{1,3}/) {
 	croak("$ip is not a valid ip address");
     }
-#DO_DEBUG("looking up $ip");
+DO_DEBUG("looking up $ip");
     my($response) = _do_lookup($ip,"ARIN");
     return($response);
 }
@@ -39,19 +39,21 @@ sub whoisip_query {
 ######################################
 sub _do_lookup {
     my($ip,$registrar) = @_;
-#DO_DEBUG("do lookup $ip at $registrar");
+DO_DEBUG("do lookup $ip at $registrar");
 #let's not beat up on them too much
     my $extraflag = "1";
     my $whois_response;
     my $whois_response_hash;
+    my @whois_response_array;
     LOOP: while($extraflag ne "") {
-#DO_DEBUG("Entering loop $extraflag");
+DO_DEBUG("Entering loop $extraflag");
 	my $lookup_host = $whois_servers{$registrar};
 	($whois_response,$whois_response_hash) = _do_query($lookup_host,$ip);
+              push(@whois_response_array,$whois_response_hash);
 	my($new_ip,$new_registrar) = _do_processing($whois_response,$registrar,$ip,$whois_response_hash);
 	if(($new_ip ne $ip) || ($new_registrar ne $registrar) ) {
-#DO_DEBUG("ip was $ip -- new ip is $new_ip");
-#DO_DEBUG("registrar was $registrar -- new registrar is $new_registrar");
+DO_DEBUG("ip was $ip -- new ip is $new_ip");
+DO_DEBUG("registrar was $registrar -- new registrar is $new_registrar");
 	    $ip = $new_ip;
 	    $registrar = $new_registrar;
 	    $extraflag++;
@@ -65,11 +67,11 @@ sub _do_lookup {
 
     if(%{$whois_response_hash}) {
 	foreach (sort keys(%{$whois_response_hash}) ) {
-#DO_DEBUG("sub -- $_ -- $whois_response_hash->{$_}");
+DO_DEBUG("sub -- $_ -- $whois_response_hash->{$_}");
 	}
-        return($whois_response_hash);
+        return($whois_response_hash,\@whois_response_array);
     }else{
-        return($whois_response);
+        return($whois_response,\@whois_response_array);
     }
 }
 
@@ -95,26 +97,26 @@ sub _do_processing {
     LOOP:foreach (@{$response}) {
   	if (/Contact information can be found in the (\S+)\s+database/) {
 	    $registrar = $1;
-#DO_DEBUG("Contact -- registrar = $registrar -- trying again");
+DO_DEBUG("Contact -- registrar = $registrar -- trying again");
 	    last LOOP;
 	}elsif((/OrgID:\s+(\S+)/) || (/source:\s+(\S+)/) && (!defined($hash_response->{'TechPhone'})) ) {
 	    my $val = $1;	
-#DO_DEBUG("Orgname match: value was $val if not RIPE,APNIC,KRNIC,or LACNIC.. will skip");
+DO_DEBUG("Orgname match: value was $val if not RIPE,APNIC,KRNIC,or LACNIC.. will skip");
 	    if($val =~ /^RIPE|APNIC|KRNIC|LACNIC$/) {
 		$registrar = $val;
-#DO_DEBUG(" RIPE - APNIC match --> $registrar --> trying again ");
+DO_DEBUG(" RIPE - APNIC match --> $registrar --> trying again ");
 		last LOOP;
 	    }
 	}elsif(/Parent:\s+(\S+)/) {
-	    if(($1 ne "") && (!defined($hash_response->{'TechPhone'})) & (!defined($hash_response->{'OrgTechPhone'})) ) {
+	    if(($1 ne "") && (!defined($hash_response->{'TechPhone'})) && (!defined($hash_response->{'OrgTechPhone'})) ) {
 		$ip = $1;
-#DO_DEBUG(" Parent match ip will be $ip --> trying again");
+DO_DEBUG(" Parent match ip will be $ip --> trying again");
 		last LOOP;
 	    }
 	}elsif((/.+\((.+)\).+$/) && ($_ !~ /.+\:.+/)) {
 	    $ip = $1;
 	    $registrar = "ARIN";
-#DO_DEBUG("parens match $ip $registrar --> trying again");
+DO_DEBUG("parens match $ip $registrar --> trying again");
 	}else{
 	    $ip = $ip;
 	    $registrar = $registrar;
@@ -173,7 +175,12 @@ Net::Whois::IP - Perl extension for looking up the whois information for ip addr
   my $ip = "192.168.1.1";
 #Response will be a reference to a hash containing all information
 #provided by the whois registrar
-  my $response = whoisip_query($ip);
+#The array_of_responses is a reference to an array containing references
+#to hashes containing each level of query done.  For example,
+#many records have to be searched several times to
+#get to the correct information, this array contains the responses
+#from each level
+  my ($response,$array_of_responses) = whoisip_query($ip);
 
 
 =head1 DESCRIPTION
