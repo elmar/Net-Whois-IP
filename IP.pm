@@ -2,7 +2,7 @@ package Net::Whois::IP;
 
 
 ########################################
-#$Id: IP.pm,v 1.7 2003/05/29 14:34:37 ben Exp $
+#$Id: IP.pm,v 1.8 2003/06/30 15:57:19 ben Exp $
 ########################################
 
 use strict;
@@ -15,7 +15,7 @@ use Carp;
 @EXPORT = qw(
 	     whoisip_query
 	    );
-$VERSION = '0.35';
+$VERSION = '0.45';
 
 my %whois_servers = ("RIPE"=>"whois.ripe.net","APNIC"=>"whois.apnic.net","KRNIC"=>"whois.krnic.net","LACNIC"=>"whois.lacnic.net","ARIN"=>"whois.arin.net");
 
@@ -24,12 +24,12 @@ my %whois_servers = ("RIPE"=>"whois.ripe.net","APNIC"=>"whois.apnic.net","KRNIC"
 ######################################
 
 sub whoisip_query {
-    my($ip,$multiple_flag) = @_;
+    my($ip,$multiple_flag,$search_options) = @_;
     if($ip !~ /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/) {
 	croak("$ip is not a valid ip address");
     }
 #DO_DEBUG("looking up $ip");
-    my($response) = _do_lookup($ip,"ARIN",$multiple_flag);
+    my($response) = _do_lookup($ip,"ARIN",$multiple_flag,$search_options);
     return($response);
 }
 
@@ -38,7 +38,7 @@ sub whoisip_query {
 #Private Subs
 ######################################
 sub _do_lookup {
-    my($ip,$registrar,$multiple_flag) = @_;
+    my($ip,$registrar,$multiple_flag,$search_options) = @_;
 #DO_DEBUG("do lookup $ip at $registrar");
 #let's not beat up on them too much
     my $extraflag = "1";
@@ -50,7 +50,7 @@ sub _do_lookup {
 	my $lookup_host = $whois_servers{$registrar};
 	($whois_response,$whois_response_hash) = _do_query($lookup_host,$ip,$multiple_flag);
               push(@whois_response_array,$whois_response_hash);
-	my($new_ip,$new_registrar) = _do_processing($whois_response,$registrar,$ip,$whois_response_hash);
+	my($new_ip,$new_registrar) = _do_processing($whois_response,$registrar,$ip,$whois_response_hash,$search_options);
 	if(($new_ip ne $ip) || ($new_registrar ne $registrar) ) {
 #DO_DEBUG("ip was $ip -- new ip is $new_ip");
 #DO_DEBUG("registrar was $registrar -- new registrar is $new_registrar");
@@ -84,13 +84,16 @@ sub _do_query{
 #Prevent killing the whois.arin.net --- they will disable an ip if greater than 40 queries per minute
     sleep(1);
     my %hash_response;
+    #DO_DEBUG("multiple flag = |$multiple_flag|");
     foreach my $line (@response) {
 	if($line =~ /^(.+):\s+(.+)$/) {
 	  if( ($multiple_flag) && ($multiple_flag ne "") ) {
 #Multiple_flag is set, so get all responses for a given record item
+	    #DO_DEBUG("Flag set ");
 	    push @{ $hash_response{$1} }, $2;
 	  }else{
 #Multiple_flag is not set, so only the last entry for any given record item
+	    #DO_DEBUG("Flag not set");
 	    $hash_response{$1} = $2;
 	   }
 	}
@@ -99,13 +102,29 @@ sub _do_query{
 }
 
 sub _do_processing {
-    my($response,$registrar,$ip,$hash_response) = @_;
+    my($response,$registrar,$ip,$hash_response,$search_options) = @_;
+
+#Response to comment.
+#Bug report stating the search method will work better with different options.  Easy way to do it now.
+#this way a reference to an array can be passed in, the defaults will still
+#be TechPhone and OrgTechPhone
+    my $pattern1 = "TechPhone";
+    my $pattern2 = "OrgTechPhone";
+    if(($search_options) && ($search_options->[0] ne "") ) {
+	$pattern1 = $search_options->[0];
+	$pattern2 = $search_options->[1];
+    }
+    #DO_DEBUG("pattern1 = $pattern1 || pattern2 == $pattern2");
+		
+		
+
     LOOP:foreach (@{$response}) {
   	if (/Contact information can be found in the (\S+)\s+database/) {
 	    $registrar = $1;
 #DO_DEBUG("Contact -- registrar = $registrar -- trying again");
 	    last LOOP;
-	}elsif((/OrgID:\s+(\S+)/) || (/source:\s+(\S+)/) && (!defined($hash_response->{'TechPhone'})) ) {
+
+	}elsif((/OrgID:\s+(\S+)/) || (/source:\s+(\S+)/) && (!defined($hash_response->{$pattern1})) ) {
 	    my $val = $1;	
 #DO_DEBUG("Orgname match: value was $val if not RIPE,APNIC,KRNIC,or LACNIC.. will skip");
 	    if($val =~ /^(?:RIPE|APNIC|KRNIC|LACNIC)$/) {
@@ -114,7 +133,7 @@ sub _do_processing {
 		last LOOP;
 	    }
 	}elsif(/Parent:\s+(\S+)/) {
-	    if(($1 ne "") && (!defined($hash_response->{'TechPhone'})) && (!defined($hash_response->{'OrgTechPhone'})) ) {
+	    if(($1 ne "") && (!defined($hash_response->{'TechPhone'})) && (!defined($hash_response->{$pattern2})) ) {
 		$ip = $1;
 #DO_DEBUG(" Parent match ip will be $ip --> trying again");
 		last LOOP;
@@ -186,12 +205,15 @@ Net::Whois::IP - Perl extension for looking up the whois information for ip addr
 #many records have to be searched several times to
 #get to the correct information, this array contains the responses
 #from each level
-  my ($response,$array_of_responses) = whoisip_query($ip,$optional_multiple_flag);
+  my ($response,$array_of_responses) = whoisip_query($ip,$optional_multiple_flag,$option_array_of_search_options);
 #if $optional_multiple_flag is not null, all possible responses for a give record will be returned
 #for example, normally only the last instance of Tech phone will be give if record
 #contains more than one, however, setting this flag to a not null will return both is an array.
 #The other consequence, is that all records returned become references to an array and must be 
 #dereferenced to utilize
+#If $option_array_of_search_options is not null, the first two entries will be used to replace
+#TechPhone and OrgTechPhone is the search method.  This is fairly dangerous, and can
+#cause the module not to work at all if set incorrectly
 
 #Normal unwrap of $response ($optional_multiple_flag not set)
  my $response = whoisip_query($ip);
@@ -208,12 +230,20 @@ foreach ( sort keys %$response ){
           }
 }
 
+#$optonal_array_of_search_options set but not $optional_multiple_flag
+my $search_options = ["NetName","OrgName"];
+my $response = whois_query($ip,"",$search_options);
+foreach (sort keys(%{$response}) ) {
+           print "$_ $response->{$_} \n";
+}
+
 
 
 =head1 DESCRIPTION
 
 Perl module to allow whois lookup of ip addresses.  This module should recursively query the various
-whois providers until it gets the more detailed information including either OrgName or CustName
+whois providers until it gets the more detailed information including either TechPhone or OrgTechPhone
+by default; however, this is overrideable.
 
 =head1 AUTHOR
 
