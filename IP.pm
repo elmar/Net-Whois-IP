@@ -15,7 +15,7 @@ use Carp;
 @EXPORT = qw(
 	     whoisip_query
 	    );
-$VERSION = '0.24';
+$VERSION = '0.35';
 
 my %whois_servers = ("RIPE"=>"whois.ripe.net","APNIC"=>"whois.apnic.net","KRNIC"=>"whois.krnic.net","LACNIC"=>"whois.lacnic.net","ARIN"=>"whois.arin.net");
 
@@ -24,12 +24,12 @@ my %whois_servers = ("RIPE"=>"whois.ripe.net","APNIC"=>"whois.apnic.net","KRNIC"
 ######################################
 
 sub whoisip_query {
-    my($ip) = @_;
+    my($ip,$multiple_flag) = @_;
     if($ip !~ /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/) {
 	croak("$ip is not a valid ip address");
     }
 #DO_DEBUG("looking up $ip");
-    my($response) = _do_lookup($ip,"ARIN");
+    my($response) = _do_lookup($ip,"ARIN",$multiple_flag);
     return($response);
 }
 
@@ -38,7 +38,7 @@ sub whoisip_query {
 #Private Subs
 ######################################
 sub _do_lookup {
-    my($ip,$registrar) = @_;
+    my($ip,$registrar,$multiple_flag) = @_;
 #DO_DEBUG("do lookup $ip at $registrar");
 #let's not beat up on them too much
     my $extraflag = "1";
@@ -48,7 +48,7 @@ sub _do_lookup {
     LOOP: while($extraflag ne "") {
 #DO_DEBUG("Entering loop $extraflag");
 	my $lookup_host = $whois_servers{$registrar};
-	($whois_response,$whois_response_hash) = _do_query($lookup_host,$ip);
+	($whois_response,$whois_response_hash) = _do_query($lookup_host,$ip,$multiple_flag);
               push(@whois_response_array,$whois_response_hash);
 	my($new_ip,$new_registrar) = _do_processing($whois_response,$registrar,$ip,$whois_response_hash);
 	if(($new_ip ne $ip) || ($new_registrar ne $registrar) ) {
@@ -76,7 +76,7 @@ sub _do_lookup {
 }
 
 sub _do_query{
-    my($registrar,$ip) = @_;
+    my($registrar,$ip,$multiple_flag) = @_;
     my $sock = _get_connect($registrar);
     print $sock "$ip\n";
     my @response = <$sock>;
@@ -86,7 +86,13 @@ sub _do_query{
     my %hash_response;
     foreach my $line (@response) {
 	if($line =~ /^(.+):\s+(.+)$/) {
+	  if( ($multiple_flag) && ($multiple_flag ne "") ) {
+#Multiple_flag is set, so get all responses for a given record item
+	    push @{ $hash_response{$1} }, $2;
+	  }else{
+#Multiple_flag is not set, so only the last entry for any given record item
 	    $hash_response{$1} = $2;
+	   }
 	}
     }
     return(\@response,\%hash_response);
@@ -180,7 +186,28 @@ Net::Whois::IP - Perl extension for looking up the whois information for ip addr
 #many records have to be searched several times to
 #get to the correct information, this array contains the responses
 #from each level
-  my ($response,$array_of_responses) = whoisip_query($ip);
+  my ($response,$array_of_responses) = whoisip_query($ip,$optional_multiple_flag);
+#if $optional_multiple_flag is not null, all possible responses for a give record will be returned
+#for example, normally only the last instance of Tech phone will be give if record
+#contains more than one, however, setting this flag to a not null will return both is an array.
+#The other consequence, is that all records returned become references to an array and must be 
+#dereferenced to utilize
+
+#Normal unwrap of $response ($optional_multiple_flag not set)
+ my $response = whoisip_query($ip);
+ foreach (sort keys(%{$response}) ) {
+           print "$_ $response->{$_} \n";
+ }
+
+#$optional_multiple_flag set to a value
+my $response = whoisip_query( $ip,"true");
+foreach ( sort keys %$response ){
+          print "$_ is\n";
+          foreach ( @{ $response->{ $_ } } ) {
+                      print "  $_\n";
+          }
+}
+
 
 
 =head1 DESCRIPTION
