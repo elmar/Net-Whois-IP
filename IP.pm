@@ -2,7 +2,7 @@ package Net::Whois::IP;
 
 
 ########################################
-#$Id: IP.pm,v 1.8 2003/06/30 15:57:19 ben Exp $
+#$Id: IP.pm,v 1.12 2004/03/08 22:53:13 ben Exp $
 ########################################
 
 use strict;
@@ -15,9 +15,15 @@ use Carp;
 @EXPORT = qw(
 	     whoisip_query
 	    );
-$VERSION = '0.45';
+$VERSION = '0.50';
 
-my %whois_servers = ("RIPE"=>"whois.ripe.net","APNIC"=>"whois.apnic.net","KRNIC"=>"whois.krnic.net","LACNIC"=>"whois.lacnic.net","ARIN"=>"whois.arin.net");
+my %whois_servers = (
+	"RIPE"=>"whois.ripe.net",
+	"APNIC"=>"whois.apnic.net",
+	"KRNIC"=>"whois.krnic.net",
+	"LACNIC"=>"whois.lacnic.net",
+	"ARIN"=>"whois.arin.net",
+	);
 
 ######################################
 # Public Subs
@@ -77,10 +83,25 @@ sub _do_lookup {
 
 sub _do_query{
     my($registrar,$ip,$multiple_flag) = @_;
-    my $sock = _get_connect($registrar);
-    print $sock "$ip\n";
-    my @response = <$sock>;
-    close($sock);
+    my @response;
+    my $i =0;
+LOOP:while(1) {    
+      $i++;
+      my $sock = _get_connect($registrar);
+      print $sock "$ip\n";
+      @response = <$sock>;
+      close($sock);
+      if($#response < 0) {
+	#DO_DEBUG("No valid response recieved from $registrar -- attempt $i ");
+	if($i <=3) {
+	  next LOOP;
+	}else{
+	  croak("No valid response for 4th time... dying....");
+	}
+      }else{
+	last LOOP;
+      }
+    }
 #Prevent killing the whois.arin.net --- they will disable an ip if greater than 40 queries per minute
     sleep(1);
     my %hash_response;
@@ -158,6 +179,7 @@ sub _get_connect {
 				     PeerAddr=>$whois_registrar,
 				     PeerPort=>'43',
 				     Timeout=>'60',
+#				     Blocking=>'0',
 				    );
     unless($sock) {
 	carp("Failed to Connect to $whois_registrar at port print -$@");
@@ -166,6 +188,7 @@ sub _get_connect {
 				      PeerAddr=>$whois_registrar,
 				      PeerPort=>'43',
 				      Timeout=>'60',
+#				      Blocking=>'0',
 				     );
 	unless($sock) {
 	    croak("Failed to Connect to $whois_registrar at port 43 for the second time - $@");
