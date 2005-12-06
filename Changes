@@ -13,3 +13,5 @@ Revision history for Perl extension Net::Whois::IP.
 	- added optional reference to an array to be based in.  This array
 	 will affect the search method and what are consider "stoppers" for
 	 records
+1.00 Tue Dec 6 12:55:22 2005
+	-no bug reports for a year... ready for release

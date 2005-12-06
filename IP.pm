@@ -2,7 +2,7 @@ package Net::Whois::IP;
 
 
 ########################################
-#$Id: IP.pm,v 1.12 2004/03/08 22:53:13 ben Exp $
+#$Id: IP.pm,v 1.13 2005/12/06 18:58:50 ben Exp $
 ########################################
 
 use strict;
@@ -15,7 +15,7 @@ use Carp;
 @EXPORT = qw(
 	     whoisip_query
 	    );
-$VERSION = '0.50';
+$VERSION = '1.00';
 
 my %whois_servers = (
 	"RIPE"=>"whois.ripe.net",
@@ -197,15 +197,15 @@ sub _get_connect {
     return($sock);
 }
 
-sub DO_DEBUG {
-    my(@stuff) = @_;
-    my $date = scalar localtime;
-    open(DEBUG,">>/tmp/Net.WhoisIP.log") or warn "Unable to open /tmp/$0.log";
-    foreach my $item ( @stuff) {
-        print DEBUG "$date|$item|\n";
-    }
-    close(DEBUG);
-}
+#sub DO_DEBUG {
+#    my(@stuff) = @_;
+#    my $date = scalar localtime;
+#    open(DEBUG,">>/tmp/Net.WhoisIP.log") or warn "Unable to open /tmp/$0.log";
+#    foreach my $item ( @stuff) {
+#        print DEBUG "$date|$item|\n";
+#    }
+#    close(DEBUG);
+#}
 
 
 1;
