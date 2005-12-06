@@ -2,7 +2,7 @@ package Net::Whois::IP;
 
 
 ########################################
-#$Id: IP.pm,v 1.13 2005/12/06 18:58:50 ben Exp $
+#$Id: IP.pm,v 1.15 2005/12/06 19:20:25 ben Exp $
 ########################################
 
 use strict;
@@ -15,7 +15,7 @@ use Carp;
 @EXPORT = qw(
 	     whoisip_query
 	    );
-$VERSION = '1.00';
+$VERSION = '1.01';
 
 my %whois_servers = (
 	"RIPE"=>"whois.ripe.net",
@@ -270,7 +270,7 @@ by default; however, this is overrideable.
 
 =head1 AUTHOR
 
-Ben Schmitz -- bschmitz@orbitz.com
+Ben Schmitz -- ben@foink.com
 
 Thanks to Orbitz for allowing the community access to this work
 
