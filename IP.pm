@@ -2,7 +2,7 @@ package Net::Whois::IP;
 
 
 ########################################
-#$Id: IP.pm,v 1.15 2005/12/06 19:20:25 ben Exp $
+#$Id: IP.pm,v 1.16 2006/12/19 19:48:50 ben Exp $
 ########################################
 
 use strict;
@@ -15,7 +15,7 @@ use Carp;
 @EXPORT = qw(
 	     whoisip_query
 	    );
-$VERSION = '1.01';
+$VERSION = '1.02';
 
 my %whois_servers = (
 	"RIPE"=>"whois.ripe.net",
@@ -23,6 +23,7 @@ my %whois_servers = (
 	"KRNIC"=>"whois.krnic.net",
 	"LACNIC"=>"whois.lacnic.net",
 	"ARIN"=>"whois.arin.net",
+	"AFRINIC"=>"whois.afrinic.net",
 	);
 
 ######################################
@@ -148,7 +149,7 @@ sub _do_processing {
 	}elsif((/OrgID:\s+(\S+)/) || (/source:\s+(\S+)/) && (!defined($hash_response->{$pattern1})) ) {
 	    my $val = $1;	
 #DO_DEBUG("Orgname match: value was $val if not RIPE,APNIC,KRNIC,or LACNIC.. will skip");
-	    if($val =~ /^(?:RIPE|APNIC|KRNIC|LACNIC)$/) {
+	    if($val =~ /^(?:RIPE|APNIC|KRNIC|LACNIC|AFRINIC)$/) {
 		$registrar = $val;
 #DO_DEBUG(" RIPE - APNIC match --> $registrar --> trying again ");
 		last LOOP;
