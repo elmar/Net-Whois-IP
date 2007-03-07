@@ -2,7 +2,7 @@ package Net::Whois::IP;
 
 
 ########################################
-#$Id: IP.pm,v 1.16 2006/12/19 19:48:50 ben Exp $
+#$Id: IP.pm,v 1.21 2007-03-07 16:49:36 ben Exp $
 ########################################
 
 use strict;
@@ -15,7 +15,7 @@ use Carp;
 @EXPORT = qw(
 	     whoisip_query
 	    );
-$VERSION = '1.02';
+$VERSION = '1.04';
 
 my %whois_servers = (
 	"RIPE"=>"whois.ripe.net",
@@ -160,9 +160,17 @@ sub _do_processing {
 #DO_DEBUG(" Parent match ip will be $ip --> trying again");
 		last LOOP;
 	    }
-	}elsif((/.+\((.+)\).+$/) && ($_ !~ /.+\:.+/)) {
-	    $ip = $1;
-	    $registrar = "ARIN";
+#Test Loop via Jason Kirk -- Thanks
+	  }elsif($registrar eq 'ARIN' && (/.+\((.+)\).+$/) && ($_ !~ /.+\:.+/)) {
+#	    my $origIp = $ip;$ip = $1;
+#Change 3-1-07
+	    my $origIp = $ip;$ip = '! '.$1;
+	    if ($ip !~ /\d{1,3}\-\d{1,3}\-\d{1,3}\-\d{1,3}/){
+	      $ip = $origIp;
+	    }
+#	}elsif((/.+\((.+)\).+$/) && ($_ !~ /.+\:.+/)) {
+#	    $ip = $1;
+#	    $registrar = "ARIN";
 #DO_DEBUG("parens match $ip $registrar --> trying again");
 	}else{
 	    $ip = $ip;
