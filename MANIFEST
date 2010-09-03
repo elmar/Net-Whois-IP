@@ -3,21 +3,6 @@ IP.pm
 Makefile.PL
 MANIFEST
 META.yml			Module meta-data (added by MakeMaker)
-Net-Whois-IP-0.03.tar.gz
-Net-Whois-IP-0.13.tar.gz
-Net-Whois-IP-0.14.tar.gz
-Net-Whois-IP-0.24.tar.gz
-Net-Whois-IP-0.35.tar
-Net-Whois-IP-0.35.tar.gz
-Net-Whois-IP-0.45.tar.gz
-Net-Whois-IP-0.50.tar.gz
-Net-Whois-IP-1.00.tar
-Net-Whois-IP-1.00.tar.gz
-Net-Whois-IP-1.01.tar.gz
-Net-Whois-IP-1.02.tar
-Net-Whois-IP-1.02.tar.gz
-Net-Whois-IP-1.03-b1.tar.gz
-Net-Whois-IP-1.04.tar.gz
 t/sample1
 t/sample1.output2
 t/sample1.output3
@@ -34,9 +19,3 @@ t/test2.pl
 t/test3.pl
 t/testx.t
 test.pl
-tmp/Net-Whois-IP-1.02/Changes
-tmp/Net-Whois-IP-1.02/IP.pm
-tmp/Net-Whois-IP-1.02/Makefile.PL
-tmp/Net-Whois-IP-1.02/MANIFEST
-tmp/Net-Whois-IP-1.02/META.yml
-tmp/Net-Whois-IP-1.02/test.pl
