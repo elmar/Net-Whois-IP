@@ -15,7 +15,7 @@ use Carp;
 @EXPORT = qw(
 	     whoisip_query
 	    );
-$VERSION = '1.06';
+$VERSION = '1.10';
 
 my %whois_servers = (
 	"RIPE"=>"whois.ripe.net",
@@ -35,7 +35,7 @@ sub whoisip_query {
     if($ip !~ /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/) {
 	croak("$ip is not a valid ip address");
     }
-DO_DEBUG("looking up $ip");
+#DO_DEBUG("looking up $ip");
     my($response) = _do_lookup($ip,"ARIN",$multiple_flag,$search_options);
     return($response);
 }
@@ -46,21 +46,21 @@ DO_DEBUG("looking up $ip");
 ######################################
 sub _do_lookup {
     my($ip,$registrar,$multiple_flag,$search_options) = @_;
-DO_DEBUG("do lookup $ip at $registrar");
+#DO_DEBUG("do lookup $ip at $registrar");
 #let's not beat up on them too much
     my $extraflag = "1";
     my $whois_response;
     my $whois_response_hash;
     my @whois_response_array;
     LOOP: while($extraflag ne "") {
-DO_DEBUG("Entering loop $extraflag");
+#DO_DEBUG("Entering loop $extraflag");
 	my $lookup_host = $whois_servers{$registrar};
 	($whois_response,$whois_response_hash) = _do_query($lookup_host,$ip,$multiple_flag);
-             push(@whois_response_array,$whois_response_hash);
+              push(@whois_response_array,$whois_response_hash);
 	my($new_ip,$new_registrar) = _do_processing($whois_response,$registrar,$ip,$whois_response_hash,$search_options);
 	if(($new_ip ne $ip) || ($new_registrar ne $registrar) ) {
-DO_DEBUG("ip was $ip -- new ip is $new_ip");
-DO_DEBUG("registrar was $registrar -- new registrar is $new_registrar");
+#DO_DEBUG("ip was $ip -- new ip is $new_ip");
+#DO_DEBUG("registrar was $registrar -- new registrar is $new_registrar");
 	    $ip = $new_ip;
 	    $registrar = $new_registrar;
 	    $extraflag++;
@@ -74,7 +74,7 @@ DO_DEBUG("registrar was $registrar -- new registrar is $new_registrar");
 
     if(%{$whois_response_hash}) {
 	foreach (sort keys(%{$whois_response_hash}) ) {
-DO_DEBUG("sub -- $_ -- $whois_response_hash->{$_}");
+#DO_DEBUG("sub -- $_ -- $whois_response_hash->{$_}");
 	}
         return($whois_response_hash,\@whois_response_array);
     }else{
@@ -93,30 +93,29 @@ LOOP:while(1) {
       @response = <$sock>;
       close($sock);
       if($#response < 0) {
-	DO_DEBUG("No valid response recieved from $registrar -- attempt $i ");
+	#DO_DEBUG("No valid response recieved from $registrar -- attempt $i ");
 	if($i <=3) {
 	  next LOOP;
 	}else{
 	  croak("No valid response for 4th time... dying....");
 	}
       }else{
-	DO_DEBUG("@response");
 	last LOOP;
       }
     }
 #Prevent killing the whois.arin.net --- they will disable an ip if greater than 40 queries per minute
     sleep(1);
     my %hash_response;
-    DO_DEBUG("multiple flag = |$multiple_flag|");
+    #DO_DEBUG("multiple flag = |$multiple_flag|");
     foreach my $line (@response) {
 	if($line =~ /^(.+):\s+(.+)$/) {
 	  if( ($multiple_flag) && ($multiple_flag ne "") ) {
 #Multiple_flag is set, so get all responses for a given record item
-	    DO_DEBUG("Flag set ");
+	    #DO_DEBUG("Flag set ");
 	    push @{ $hash_response{$1} }, $2;
 	  }else{
 #Multiple_flag is not set, so only the last entry for any given record item
-	    DO_DEBUG("Flag not set");
+	    #DO_DEBUG("Flag not set");
 	    $hash_response{$1} = $2;
 	   }
 	}
@@ -133,34 +132,32 @@ sub _do_processing {
 #be TechPhone and OrgTechPhone
     my $pattern1 = "TechPhone";
     my $pattern2 = "OrgTechPhone";
-    my $pattern3 = "RTechPhone";
     if(($search_options) && ($search_options->[0] ne "") ) {
 	$pattern1 = $search_options->[0];
 	$pattern2 = $search_options->[1];
-	$pattern3 = $search_options->[2];
     }
-    DO_DEBUG("pattern1 = $pattern1 || pattern2 == $pattern2");
+    #DO_DEBUG("pattern1 = $pattern1 || pattern2 == $pattern2");
 		
 		
 
     LOOP:foreach (@{$response}) {
   	if (/Contact information can be found in the (\S+)\s+database/) {
 	    $registrar = $1;
-DO_DEBUG("Contact -- registrar = $registrar -- trying again");
+#DO_DEBUG("Contact -- registrar = $registrar -- trying again");
 	    last LOOP;
 
-	}elsif((/OrgID:\s+(\S+)/i) || (/source:\s+(\S+)/) && (!defined($hash_response->{$pattern1})) && (!defined($hash_response->{$pattern2})) && (!defined($hash_response->{$pattern3})) ) {
+	}elsif((/OrgID:\s+(\S+)/i) || (/source:\s+(\S+)/i) && (!defined($hash_response->{$pattern1})) ) {
 	    my $val = $1;	
-DO_DEBUG("Orgname match: value was $val if not RIPE,APNIC,KRNIC,or LACNIC.. will skip");
+#DO_DEBUG("Orgname match: value was $val if not RIPE,APNIC,KRNIC,or LACNIC.. will skip");
 	    if($val =~ /^(?:RIPE|APNIC|KRNIC|LACNIC|AFRINIC)$/) {
 		$registrar = $val;
-DO_DEBUG(" RIPE - APNIC match --> $registrar --> trying again ");
+#DO_DEBUG(" RIPE - APNIC match --> $registrar --> trying again ");
 		last LOOP;
 	    }
 	}elsif(/Parent:\s+(\S+)/) {
-	    if(($1 ne "") && (!defined($hash_response->{'$pattern1'})) && (!defined($hash_response->{$pattern2})) && (!defined($hash_response->{$pattern3})) ) {
+	    if(($1 ne "") && (!defined($hash_response->{'TechPhone'})) && (!defined($hash_response->{$pattern2})) ) {
 		$ip = $1;
-DO_DEBUG(" Parent match ip will be $ip --> trying again");
+#DO_DEBUG(" Parent match ip will be $ip --> trying again");
 		last LOOP;
 	    }
 #Test Loop via Jason Kirk -- Thanks
@@ -174,7 +171,7 @@ DO_DEBUG(" Parent match ip will be $ip --> trying again");
 #	}elsif((/.+\((.+)\).+$/) && ($_ !~ /.+\:.+/)) {
 #	    $ip = $1;
 #	    $registrar = "ARIN";
-DO_DEBUG("parens match $ip $registrar --> trying again");
+#DO_DEBUG("parens match $ip $registrar --> trying again");
 	}else{
 	    $ip = $ip;
 	    $registrar = $registrar;
@@ -209,15 +206,15 @@ sub _get_connect {
     return($sock);
 }
 
-sub DO_DEBUG {
-    my(@stuff) = @_;
-    my $date = scalar localtime;
-    open(DEBUG,">>/tmp/Net.WhoisIP.log") or warn "Unable to open /tmp/$0.log";
-    foreach my $item ( @stuff) {
-        print DEBUG "$date|$item|\n";
-    }
-    close(DEBUG);
-}
+#sub DO_DEBUG {
+#    my(@stuff) = @_;
+#    my $date = scalar localtime;
+#    open(DEBUG,">>/tmp/Net.WhoisIP.log") or warn "Unable to open /tmp/$0.log";
+#    foreach my $item ( @stuff) {
+#        print DEBUG "$date|$item|\n";
+#    }
+#    close(DEBUG);
+#}
 
 
 1;

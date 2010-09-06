@@ -15,3 +15,5 @@ Revision history for Perl extension Net::Whois::IP.
 	 records
 1.00 Tue Dec 6 12:55:22 2005
 	-no bug reports for a year... ready for release
+1.10 Mon Sep 6 8:55:33 2010
+	- added case-insensitive flag to pattern match for orgid
