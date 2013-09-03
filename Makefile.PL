@@ -4,4 +4,7 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     'NAME'	=> 'Net::Whois::IP',
     'VERSION_FROM' => 'IP.pm', # finds $VERSION
+    'BUILD_REQUIRES'	 => {
+		'Regexp::IPv6' => '.02',
+    },
 );

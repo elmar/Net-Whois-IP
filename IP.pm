@@ -16,7 +16,7 @@ use Carp;
 @EXPORT = qw(
 	     whoisip_query
 	    );
-$VERSION = '1.11';
+$VERSION = '1.12';
 
 my %whois_servers = (
 	"RIPE"=>"whois.ripe.net",

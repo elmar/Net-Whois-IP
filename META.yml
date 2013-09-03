@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Net-Whois-IP
-version:            1.11
+version:            1.12
 abstract:           ~
 author:  []
 license:            unknown
@@ -8,7 +8,7 @@ distribution_type:  module
 configure_requires:
     ExtUtils::MakeMaker:  0
 build_requires:
-    ExtUtils::MakeMaker:  0
+    Regexp::IPv6:  .02
 requires:  {}
 no_index:
     directory:
