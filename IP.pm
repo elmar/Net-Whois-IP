@@ -8,6 +8,7 @@ package Net::Whois::IP;
 use strict;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK);
 use IO::Socket;
+use Regexp::IPv6 qw($IPv6_re);
 require Exporter;
 use Carp;
 
@@ -15,7 +16,7 @@ use Carp;
 @EXPORT = qw(
 	     whoisip_query
 	    );
-$VERSION = '1.10';
+$VERSION = '1.11';
 
 my %whois_servers = (
 	"RIPE"=>"whois.ripe.net",
@@ -32,10 +33,10 @@ my %whois_servers = (
 
 sub whoisip_query {
     my($ip,$multiple_flag,$search_options) = @_;
-    if($ip !~ /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/) {
+    if(($ip !~ /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/)  &&  ($ip !~ /^$IPv6_re$/) ) {
 	croak("$ip is not a valid ip address");
     }
-#DO_DEBUG("looking up $ip");
+DO_DEBUG("looking up $ip");
     my($response) = _do_lookup($ip,"ARIN",$multiple_flag,$search_options);
     return($response);
 }
@@ -46,21 +47,21 @@ sub whoisip_query {
 ######################################
 sub _do_lookup {
     my($ip,$registrar,$multiple_flag,$search_options) = @_;
-#DO_DEBUG("do lookup $ip at $registrar");
+DO_DEBUG("do lookup $ip at $registrar");
 #let's not beat up on them too much
     my $extraflag = "1";
     my $whois_response;
     my $whois_response_hash;
     my @whois_response_array;
     LOOP: while($extraflag ne "") {
-#DO_DEBUG("Entering loop $extraflag");
+DO_DEBUG("Entering loop $extraflag");
 	my $lookup_host = $whois_servers{$registrar};
 	($whois_response,$whois_response_hash) = _do_query($lookup_host,$ip,$multiple_flag);
               push(@whois_response_array,$whois_response_hash);
 	my($new_ip,$new_registrar) = _do_processing($whois_response,$registrar,$ip,$whois_response_hash,$search_options);
 	if(($new_ip ne $ip) || ($new_registrar ne $registrar) ) {
-#DO_DEBUG("ip was $ip -- new ip is $new_ip");
-#DO_DEBUG("registrar was $registrar -- new registrar is $new_registrar");
+DO_DEBUG("ip was $ip -- new ip is $new_ip");
+DO_DEBUG("registrar was $registrar -- new registrar is $new_registrar");
 	    $ip = $new_ip;
 	    $registrar = $new_registrar;
 	    $extraflag++;
@@ -74,7 +75,7 @@ sub _do_lookup {
 
     if(%{$whois_response_hash}) {
 	foreach (sort keys(%{$whois_response_hash}) ) {
-#DO_DEBUG("sub -- $_ -- $whois_response_hash->{$_}");
+DO_DEBUG("sub -- $_ -- $whois_response_hash->{$_}");
 	}
         return($whois_response_hash,\@whois_response_array);
     }else{
@@ -143,21 +144,21 @@ sub _do_processing {
     LOOP:foreach (@{$response}) {
   	if (/Contact information can be found in the (\S+)\s+database/) {
 	    $registrar = $1;
-#DO_DEBUG("Contact -- registrar = $registrar -- trying again");
+DO_DEBUG("Contact -- registrar = $registrar -- trying again");
 	    last LOOP;
 
 	}elsif((/OrgID:\s+(\S+)/i) || (/source:\s+(\S+)/i) && (!defined($hash_response->{$pattern1})) ) {
 	    my $val = $1;	
-#DO_DEBUG("Orgname match: value was $val if not RIPE,APNIC,KRNIC,or LACNIC.. will skip");
+DO_DEBUG("Orgname match: value was $val if not RIPE,APNIC,KRNIC,or LACNIC.. will skip");
 	    if($val =~ /^(?:RIPE|APNIC|KRNIC|LACNIC|AFRINIC)$/) {
 		$registrar = $val;
-#DO_DEBUG(" RIPE - APNIC match --> $registrar --> trying again ");
+DO_DEBUG(" RIPE - APNIC match --> $registrar --> trying again ");
 		last LOOP;
 	    }
 	}elsif(/Parent:\s+(\S+)/) {
 	    if(($1 ne "") && (!defined($hash_response->{'TechPhone'})) && (!defined($hash_response->{$pattern2})) ) {
 		$ip = $1;
-#DO_DEBUG(" Parent match ip will be $ip --> trying again");
+DO_DEBUG(" Parent match ip will be $ip --> trying again");
 		last LOOP;
 	    }
 #Test Loop via Jason Kirk -- Thanks
@@ -171,7 +172,7 @@ sub _do_processing {
 #	}elsif((/.+\((.+)\).+$/) && ($_ !~ /.+\:.+/)) {
 #	    $ip = $1;
 #	    $registrar = "ARIN";
-#DO_DEBUG("parens match $ip $registrar --> trying again");
+DO_DEBUG("parens match $ip $registrar --> trying again");
 	}else{
 	    $ip = $ip;
 	    $registrar = $registrar;
@@ -206,15 +207,15 @@ sub _get_connect {
     return($sock);
 }
 
-#sub DO_DEBUG {
-#    my(@stuff) = @_;
-#    my $date = scalar localtime;
-#    open(DEBUG,">>/tmp/Net.WhoisIP.log") or warn "Unable to open /tmp/$0.log";
-#    foreach my $item ( @stuff) {
-#        print DEBUG "$date|$item|\n";
-#    }
-#    close(DEBUG);
-#}
+sub DO_DEBUG {
+    my(@stuff) = @_;
+    my $date = scalar localtime;
+    open(DEBUG,">>/tmp/Net.WhoisIP.log") or warn "Unable to open /tmp/$0.log";
+    foreach my $item ( @stuff) {
+        print DEBUG "$date|$item|\n";
+    }
+    close(DEBUG);
+}
 
 
 1;
