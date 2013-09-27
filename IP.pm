@@ -16,7 +16,7 @@ use Carp;
 @EXPORT = qw(
 	     whoisip_query
 	    );
-$VERSION = '1.12';
+$VERSION = '1.14';
 
 my %whois_servers = (
 	"RIPE"=>"whois.ripe.net",
@@ -57,7 +57,7 @@ DO_DEBUG("do lookup $ip at $registrar");
 DO_DEBUG("Entering loop $extraflag");
 	my $lookup_host = $whois_servers{$registrar};
 	($whois_response,$whois_response_hash) = _do_query($lookup_host,$ip,$multiple_flag);
-              push(@whois_response_array,$whois_response_hash);
+        push(@whois_response_array,$whois_response_hash);
 	my($new_ip,$new_registrar) = _do_processing($whois_response,$registrar,$ip,$whois_response_hash,$search_options);
 	if(($new_ip ne $ip) || ($new_registrar ne $registrar) ) {
 DO_DEBUG("ip was $ip -- new ip is $new_ip");
@@ -109,7 +109,7 @@ LOOP:while(1) {
     my %hash_response;
     #DO_DEBUG("multiple flag = |$multiple_flag|");
     foreach my $line (@response) {
-	if($line =~ /^(.+):\s+(.+)$/) {
+	if($line =~ /^(.+?):\s+(.+)$/) {
 	  if( ($multiple_flag) && ($multiple_flag ne "") ) {
 #Multiple_flag is set, so get all responses for a given record item
 	    #DO_DEBUG("Flag set ");
