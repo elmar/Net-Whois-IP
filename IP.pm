@@ -9,6 +9,7 @@ use strict;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK);
 use IO::Socket;
 use Regexp::IPv6 qw($IPv6_re);
+use File::Spec;
 require Exporter;
 use Carp;
 
@@ -16,7 +17,7 @@ use Carp;
 @EXPORT = qw(
 	     whoisip_query
 	    );
-$VERSION = '1.14';
+$VERSION = '1.15';
 
 my %whois_servers = (
 	"RIPE"=>"whois.ripe.net",
@@ -210,7 +211,12 @@ sub _get_connect {
 sub DO_DEBUG {
     my(@stuff) = @_;
     my $date = scalar localtime;
-    open(DEBUG,">>/tmp/Net.WhoisIP.log") or warn "Unable to open /tmp/$0.log";
+    my $tmp_dir = File::Spec->tmpdir();
+    if(!defined($tmp_dir)) {
+	$tmp_dir = "/tmp/";
+    }
+    my $outdebug = $tmp_dir . "/Net.WhoisIP.log";
+    open(DEBUG,">>$outdebug") or warn "Unable to open $outdebug";
     foreach my $item ( @stuff) {
         print DEBUG "$date|$item|\n";
     }
