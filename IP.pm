@@ -13,11 +13,11 @@ use File::Spec;
 require Exporter;
 use Carp;
 
-@ISA = qw(Exporter AutoLoader);
+@ISA = 'Exporter';
 @EXPORT = qw(
 	     whoisip_query
 	    );
-$VERSION = '1.16';
+$VERSION = '1.17';
 
 my %whois_servers = (
 	"RIPE"=>"whois.ripe.net",
