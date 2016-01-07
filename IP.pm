@@ -17,7 +17,7 @@ use Carp;
 @EXPORT = qw(
 	     whoisip_query
 	    );
-$VERSION = '1.18';
+$VERSION = '1.19';
 
 my %whois_servers = (
 	"RIPE"=>"whois.ripe.net",
@@ -38,7 +38,10 @@ sub whoisip_query {
     if(($ip !~ /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/)  &&  ($ip !~ /^$IPv6_re$/) ) {
 				croak("$ip is not a valid ip address");
     }
-#DO_DEBUG("looking up $ip");
+    if(!defined($reg)) {
+      $reg = "ARIN";
+    }
+#DO_DEBUG("looking up $ip - at $reg");
     my($response) = _do_lookup($ip,$reg,$multiple_flag,$raw_flag,$search_options);
     return($response);
 }
